@@ -4,9 +4,22 @@
  */
 package com.sayantan.Action;
 
+import com.itextpdf.text.*;
+import com.itextpdf.text.pdf.PdfContentByte;
+import com.itextpdf.text.pdf.PdfTemplate;
+import com.itextpdf.text.pdf.PdfWriter;
+
 import com.sayantan.commons.AppFormVars;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.Shape;
+import java.awt.print.PrinterException;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.sql.SQLException;
 import java.text.MessageFormat;
+import java.util.logging.Level;
+import javax.swing.ImageIcon;
 import javax.swing.JTable;
 import org.apache.log4j.Logger;
 
@@ -18,11 +31,30 @@ public class EODProcess extends javax.swing.JFrame {
 
     private static final Logger logger = Logger.getLogger(EODProcessV1.class);
     AppFormVars formVars = new AppFormVars();
+    MessageFormat header = new MessageFormat("EOD Report");
+    MessageFormat footer = new MessageFormat("Page{0,number,integer}");
+    /**
+     * Returns an ImageIcon, or null if the path was invalid.
+     */
+    ImageIcon icon = createImageIcon("images/spiral.PNG",
+            "table border icon");
+
+    protected static ImageIcon createImageIcon(String path,
+            String description) {
+        java.net.URL imgURL = EODProcess.class.getResource(path);
+        if (imgURL != null) {
+            return new ImageIcon(imgURL, description);
+        } else {
+            System.err.println("Couldn't find file: " + path);
+            return null;
+        }
+    }
 
     /**
      * Creates new form EODProcess
      */
-    public EODProcess() {
+    public EODProcess() throws SQLException {
+        EODProcessV1 ev = new EODProcessV1();
         initComponents();
     }
 
@@ -46,6 +78,7 @@ public class EODProcess extends javax.swing.JFrame {
         jButton2 = new javax.swing.JButton();
         jButton3 = new javax.swing.JButton();
         jButton4 = new javax.swing.JButton();
+        jButton9 = new javax.swing.JButton();
         jPanel2 = new javax.swing.JPanel();
         jScrollPane3 = new javax.swing.JScrollPane();
         jTable3 = new javax.swing.JTable();
@@ -86,23 +119,12 @@ public class EODProcess extends javax.swing.JFrame {
         jScrollPane2.setFocusCycleRoot(true);
 
         jTable2.setAutoCreateRowSorter(true);
+        jTable2.setFont(new java.awt.Font("Tahoma", 0, 12)); // NOI18N
+        jTable2.setForeground(new java.awt.Color(0, 51, 102));
         jTable2.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
-                {null, null, null, null, null, null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null, null, null, null, null, null}
-            },
+            AppFormVars.jTable2ListValues,
             new String [] {
-                "Symbol", "Type", "Amount", "C/P", "Strike", "Expiration", "Prev Price", "Current Price", "Prev Prem", "Current Prem", "Prem Theo", "Current Theo", "Daily PL MTM", "Daily PL Theo"
+                "Symbol", "Type", "Amount", "C/P", "Strike", "Expiration", "Prev Price", "Current Price", "Prev Prem", "Current Prem", "Prem Theo", "Current Theo", "Daily PLMTM", "Daily PL Theo"
             }
         ));
         jTable2.setColumnSelectionAllowed(true);
@@ -145,12 +167,21 @@ public class EODProcess extends javax.swing.JFrame {
             }
         });
 
+        jButton9.setText("jButton9");
+        jButton9.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton9ActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel15Layout = new javax.swing.GroupLayout(jPanel15);
         jPanel15.setLayout(jPanel15Layout);
         jPanel15Layout.setHorizontalGroup(
             jPanel15Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel15Layout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap(494, Short.MAX_VALUE)
+                .addComponent(jButton9)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jButton4)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jButton3)
@@ -163,12 +194,13 @@ public class EODProcess extends javax.swing.JFrame {
         jPanel15Layout.setVerticalGroup(
             jPanel15Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel15Layout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap(16, Short.MAX_VALUE)
                 .addGroup(jPanel15Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jButton1)
                     .addComponent(jButton2)
                     .addComponent(jButton3)
-                    .addComponent(jButton4))
+                    .addComponent(jButton4)
+                    .addComponent(jButton9))
                 .addContainerGap())
         );
 
@@ -182,7 +214,7 @@ public class EODProcess extends javax.swing.JFrame {
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 394, Short.MAX_VALUE)
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 396, Short.MAX_VALUE)
                 .addGap(14, 14, 14)
                 .addComponent(jPanel15, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGap(26, 26, 26))
@@ -193,29 +225,12 @@ public class EODProcess extends javax.swing.JFrame {
         jPanel2.setOpaque(false);
 
         jTable3.setAutoCreateRowSorter(true);
-        jTable3.setBorder(javax.swing.BorderFactory.createCompoundBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.LOWERED, new java.awt.Color(102, 102, 102), new java.awt.Color(204, 204, 204), new java.awt.Color(102, 102, 102), new java.awt.Color(102, 102, 102)), javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.LOWERED, new java.awt.Color(102, 102, 102), new java.awt.Color(204, 204, 204), new java.awt.Color(204, 204, 204), new java.awt.Color(204, 204, 204))));
+        jTable3.setFont(new java.awt.Font("Tahoma", 0, 12)); // NOI18N
+        jTable3.setForeground(new java.awt.Color(0, 51, 102));
         jTable3.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
-                formVars.getSymbol().toArray(),
-                {null, null, null, null, null, null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null, null, null, null, null, null}
-            },
+            AppFormVars.jTable3ListValues,
             new String [] {
-                "Symbol", "Type", "Amount", "C/P", "Strike", "Expiration", "Prev Price", "Current Price", "Prev Prem", "Current Prem", "Prem Theo", "Current Theo", "Daily PLMTM", "Daily PL Theo"
+                "Symbol", "Type", "Amount", "C/P", "Strike", "Expiration", "Trade Price", "Current Price", "Trade Prem", "Current Prem", "Prem Theo", "Current Theo", "Daily PLMTM", "Daily PL Theo"
             }
         ));
         jTable3.setColumnSelectionAllowed(true);
@@ -265,7 +280,7 @@ public class EODProcess extends javax.swing.JFrame {
         jPanel5Layout.setHorizontalGroup(
             jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel5Layout.createSequentialGroup()
-                .addContainerGap(550, Short.MAX_VALUE)
+                .addContainerGap(577, Short.MAX_VALUE)
                 .addComponent(jButton8)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jButton7)
@@ -278,7 +293,7 @@ public class EODProcess extends javax.swing.JFrame {
         jPanel5Layout.setVerticalGroup(
             jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel5Layout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap(15, Short.MAX_VALUE)
                 .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jButton6)
                     .addComponent(jButton5)
@@ -291,13 +306,13 @@ public class EODProcess extends javax.swing.JFrame {
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 1000, Short.MAX_VALUE)
+            .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 1027, Short.MAX_VALUE)
             .addComponent(jPanel5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel2Layout.createSequentialGroup()
-                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 394, Short.MAX_VALUE)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 397, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jPanel5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGap(27, 27, 27))
@@ -308,11 +323,13 @@ public class EODProcess extends javax.swing.JFrame {
         jInternalFrame2.setBorder(javax.swing.BorderFactory.createCompoundBorder(new javax.swing.border.MatteBorder(null), javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.LOWERED, null, new java.awt.Color(204, 204, 204), null, java.awt.Color.lightGray)));
         jInternalFrame2.setIconifiable(true);
         jInternalFrame2.setMaximizable(true);
+        jInternalFrame2.setResizable(true);
         jInternalFrame2.setTitle("Daily P/L Report");
         jInternalFrame2.setAutoscrolls(true);
         jInternalFrame2.setDoubleBuffered(true);
         jInternalFrame2.setFocusTraversalPolicyProvider(true);
         jInternalFrame2.setFont(new java.awt.Font("Trebuchet MS", 0, 11)); // NOI18N
+        jInternalFrame2.setFrameIcon(null);
         jInternalFrame2.setInheritsPopupMenu(true);
         try {
             jInternalFrame2.setSelected(true);
@@ -325,7 +342,7 @@ public class EODProcess extends javax.swing.JFrame {
         jPanel6.setLayout(jPanel6Layout);
         jPanel6Layout.setHorizontalGroup(
             jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 0, Short.MAX_VALUE)
+            .addGap(0, 1, Short.MAX_VALUE)
         );
         jPanel6Layout.setVerticalGroup(
             jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -333,15 +350,12 @@ public class EODProcess extends javax.swing.JFrame {
         );
 
         jTable1.setAutoCreateRowSorter(true);
+        jTable1.setFont(new java.awt.Font("Tahoma", 0, 12)); // NOI18N
+        jTable1.setForeground(new java.awt.Color(0, 51, 102));
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
-                {null, null, null},
-                {null, null, null},
-                {null, null, null},
-                {null, null, null}
-            },
+            AppFormVars.jTable1ListValues,
             new String [] {
-                "Symbol", "Daily PL MTM", "Daily PL Theo"
+                "Symbol", "Current Daily PLMTM", "Daily PL Theo"
             }
         ));
         jTable1.setCellSelectionEnabled(true);
@@ -366,7 +380,7 @@ public class EODProcess extends javax.swing.JFrame {
             jInternalFrame2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jInternalFrame2Layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 418, Short.MAX_VALUE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 417, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
@@ -375,7 +389,7 @@ public class EODProcess extends javax.swing.JFrame {
             .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jInternalFrame2Layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 231, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -386,11 +400,11 @@ public class EODProcess extends javax.swing.JFrame {
         jPanel3.setLayout(jPanel3Layout);
         jPanel3Layout.setHorizontalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jDesktopPane2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 1000, Short.MAX_VALUE)
+            .addComponent(jDesktopPane2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 1027, Short.MAX_VALUE)
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jDesktopPane2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 479, Short.MAX_VALUE)
+            .addComponent(jDesktopPane2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 486, Short.MAX_VALUE)
         );
 
         jTabbedPane1.addTab("Summary", jPanel3);
@@ -452,17 +466,13 @@ public class EODProcess extends javax.swing.JFrame {
         } catch (SQLException e) {
             logger.info(e);
         }
-        
-        logger.info(formVars.getSymbol());
     }//GEN-LAST:event_jButton5ActionPerformed
 
     private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
         // TODO add your handling code here:
-        MessageFormat header = new MessageFormat("Report Print");
-        MessageFormat footer = new MessageFormat("Page{0,number,integer}");
         try {
             jTable2.print(JTable.PrintMode.FIT_WIDTH, header, footer);
-            jTable1.print(JTable.PrintMode.FIT_WIDTH, header, footer);
+            jTable3.print(JTable.PrintMode.FIT_WIDTH, header, footer);
         } catch (java.awt.print.PrinterException e) {
             System.err.format("Cannot print %s%n", e.getMessage());
         }
@@ -480,27 +490,60 @@ public class EODProcess extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_jButton1ActionPerformed
 
-    /**
-     * Create the jTable Array
-     */
-    /*public void createjList(ArrayList<OptionParams> op) {
-        jListValues = new String[op.size()][4];
-        logger.info("Size of OptionParams: " + op.size() + ":"
-                + jListValues.length);
-        for (int m = 0; m < op.size(); m++) {
-            jListValues[m][0] = op.get(m).getStrikeL().toString();
-            Double a = op.get(m).getMoneynessL() * 100D;
-            BigDecimal a1 = new BigDecimal(a.toString());
-            jListValues[m][1] = a1.setScale(2, BigDecimal.ROUND_HALF_EVEN).toString() + "%";
-            Double b = (op.get(m).getCloseIvL() * 100D);
-            BigDecimal b1 = new BigDecimal(b.toString());
-            jListValues[m][2] = b1.setScale(2, BigDecimal.ROUND_HALF_EVEN).toString() + "%";
-            Double c = op.get(m).getTradeIvL() * 100D;
-            BigDecimal c1 = new BigDecimal(c.toString());
-            jListValues[m][3] = c1.setScale(2, BigDecimal.ROUND_HALF_EVEN).toString() + "%";
+    private void jButton9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton9ActionPerformed
+        // TODO add your handling code here:
+        Document document = new Document(new Rectangle(1200, 1200));
+
+        try {
+            PdfWriter writer = PdfWriter.getInstance(document, new FileOutputStream("C:\\jTable4.pdf"));
+
+            document.open();
+            document.add(new Paragraph("asd6tuyf"));
+            PdfContentByte cb = writer.getDirectContent();
+
+            cb.saveState();
+
+            PdfTemplate pdfTemplate = cb.createTemplate(jTable2.getWidth(), jTable2.getHeight());
+            cb.addTemplate(pdfTemplate, 0, 0);
+
+            Graphics2D g2 = cb.createGraphics(jTable2.getWidth(), jTable2.getHeight());
+            g2.drawRect(0, 0, jTable2.getWidth() + 2, jTable2.getHeight() + 2);
+            Shape oldClip = g2.getClip();
+            g2.clipRect(0, 0, 1500, 1500);
+
+            Graphics2D g3 = cb.createGraphics(jTable2.getWidth(), jTable2.getHeight());
+            g3.drawRect(0, 0, jTable2.getWidth() + 2, jTable2.getHeight() + 2);
+            oldClip = g3.getClip();
+            g3.clipRect(0, 0, 1500, 1500);
+
+            Graphics2D g4 = cb.createGraphics(jTable2.getWidth(), jTable2.getHeight());
+            g4.drawRect(0, 0, jTable2.getWidth() + 2, jTable2.getHeight() + 2);
+            oldClip = g4.getClip();
+            g4.clipRect(0, 0, 1500, 1500);
+
+
+            jTable1.print(g2);
+            //cb.saveState();
+
+            g2.setClip(oldClip);
+
+            g2.dispose();
+            cb.restoreState();
+            cb.saveState();
+            jTable2.print(g3);
+            cb.restoreState();
+            cb.saveState();
+            jTable3.print(g4);
+            cb.restoreState();
+        } catch (DocumentException ex) {
+            java.util.logging.Logger.getLogger(EODProcess.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (FileNotFoundException e) {
+            System.err.println(e.getMessage());
         }
-    }
-*/
+        document.close();
+        System.out.println("8");
+    }//GEN-LAST:event_jButton9ActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -521,13 +564,7 @@ public class EODProcess extends javax.swing.JFrame {
                     break;
                 }
             }
-        } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(EODProcess.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(EODProcess.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(EODProcess.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
             java.util.logging.Logger.getLogger(EODProcess.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
         //</editor-fold>
@@ -537,8 +574,13 @@ public class EODProcess extends javax.swing.JFrame {
          */
         java.awt.EventQueue.invokeLater(new Runnable() {
 
+            @Override
             public void run() {
-                new EODProcess().setVisible(true);
+                try {
+                    new EODProcess().setVisible(true);
+                } catch (SQLException ex) {
+                    java.util.logging.Logger.getLogger(EODProcess.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         });
     }
@@ -551,6 +593,7 @@ public class EODProcess extends javax.swing.JFrame {
     private javax.swing.JButton jButton6;
     private javax.swing.JButton jButton7;
     private javax.swing.JButton jButton8;
+    private javax.swing.JButton jButton9;
     private javax.swing.JDesktopPane jDesktopPane2;
     private javax.swing.JInternalFrame jInternalFrame2;
     private javax.swing.JLabel jLabel1;
@@ -568,8 +611,8 @@ public class EODProcess extends javax.swing.JFrame {
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JTabbedPane jTabbedPane1;
-    private javax.swing.JTable jTable1;
-    public javax.swing.JTable jTable2;
-    private javax.swing.JTable jTable3;
+    public static javax.swing.JTable jTable1;
+    public static javax.swing.JTable jTable2;
+    public static javax.swing.JTable jTable3;
     // End of variables declaration//GEN-END:variables
 }
