@@ -54,7 +54,6 @@ public class EODProcessV1 {
 
         logger.info("query: " + positionQuery + "\n" + tradeQuery);
         AppFormVars.setStmt(AppFormVars.getConn().createStatement());
-
         /*
          * set trade-params
          */
@@ -84,6 +83,8 @@ public class EODProcessV1 {
          */
         AppFormVars.setRsDataSet(AppFormVars.getStmt().executeQuery(positionQuery));
         while (AppFormVars.getRsDataSet().next()) {
+            logger.info("posiid: " + AppFormVars.getRsDataSet().getString("posid"));
+
             formVars.addPositionParams(
                     AppFormVars.getRsDataSet().getString("posid"),
                     AppFormVars.getRsDataSet().getString("stock"),
@@ -105,7 +106,7 @@ public class EODProcessV1 {
 
         /**
          * P/L calculations DailyMTMPL = (CurrentPrem – PrevPrem)*amount
-         * DailyPLTheo= (CurrentPremTheo– PrevPremTheo)*amount
+         * DailyPLTheo= (CurrentPremTheo– PrevPremTheo)*amount //PUT PROPER FORMULA FOR POSITION TABLE
          *
          */
         mc = MathContext.DECIMAL128;
@@ -118,7 +119,25 @@ public class EODProcessV1 {
                     BigDecimal dailyOpenFutPl = AppFormVars.getPositionParams().get(a).getCurrentPrice().subtract(AppFormVars.getPositionParams().get(a).getPrevPrice(), mc).multiply(new BigDecimal(AppFormVars.getPositionParams().get(a).getAmount()));
                     AppFormVars.getPositionParams().get(a).setDailyPLmtm(dailyOpenFutPl);
                     AppFormVars.getPositionParams().get(a).setDailyPLtheo(dailyOpenFutPl);
-                } else if (AppFormVars.getPositionParams().get(a).getType().equalsIgnoreCase("Position")) {
+                } else if (AppFormVars.getPositionParams().get(a).getType().equalsIgnoreCase("Option")) {
+                    BigDecimal dailyPLTheo = AppFormVars.getPositionParams().get(a).getCurrentPrice().subtract(AppFormVars.getPositionParams().get(a).getPrevPrice(), mc).multiply(new BigDecimal(AppFormVars.getPositionParams().get(a).getAmount()));
+                    AppFormVars.getPositionParams().get(a).setDailyPLmtm(dailyOpenFutPl);
+                    AppFormVars.getPositionParams().get(a).setDailyPLtheo(dailyOpenFutPl);
+                }
+            }
+        }
+        
+        //PUT THE PROPER FORMULAE FOR TRADE TABLE
+        for (int a = 0; a < AppFormVars.getTradeParams().size(); a++) {
+            if (AppFormVars.getTradeParams().get(a).getCurrentPrice() != null
+                    && AppFormVars.getTradeParams().get(a).getPrevPrice() != null
+                    && AppFormVars.getTradeParams().get(a).getAmount() != null) {
+                if (AppFormVars.getTradeParams().get(a).getType().equalsIgnoreCase("Future")
+                        || AppFormVars.getTradeParams().get(a).getType().equalsIgnoreCase("Cash")) {
+                    BigDecimal dailyOpenFutPl = AppFormVars.getTradeParams().get(a).getCurrentPrice().subtract(AppFormVars.getTradeParams().get(a).getPrevPrice(), mc).multiply(new BigDecimal(AppFormVars.getTradeParams().get(a).getAmount()));
+                    AppFormVars.getTradeParams().get(a).setDailyPLmtm(dailyOpenFutPl);
+                    AppFormVars.getTradeParams().get(a).setDailyPLtheo(dailyOpenFutPl);
+                } else if (AppFormVars.getTradeParams().get(a).getType().equalsIgnoreCase("Trade")) {
                 }
             }
         }
@@ -153,7 +172,7 @@ public class EODProcessV1 {
         }
 
         /**
-         * today's trades j-table
+         * today's trades j-table //CORRECT THE VAR NAMES
          */
         for (int m = 0; m < AppFormVars.getTradeParams().size(); m++) {
             AppFormVars.jTable3ListValues[m][0] = AppFormVars.getTradeParams().get(m).getSymbol();
@@ -215,7 +234,7 @@ public class EODProcessV1 {
          * null, ex); } }
          */
         try {
-            PdfWriter.getInstance(document, new FileOutputStream("C:/hello.pdf"));
+            PdfWriter.getInstance(document, new FileOutputStream("hello.pdf"));
             document.open();
             //document.add(new ed.jTable2);
             document.add(new Paragraph("asd6tuyf"));
@@ -239,7 +258,7 @@ public class EODProcessV1 {
         cell.setCellStyle(cellStyle);
         System.out.println("kakjsdnhf");
         try {
-            fileOut = new FileOutputStream("c:/workbook.xlsx");
+            fileOut = new FileOutputStream("workbook.xlsx");
             wb.write(fileOut);
             fileOut.close();
         } catch (IOException ex) {

@@ -40,7 +40,7 @@ public class ConnectionManager {
 	static String m_DBDriver = "org.postgresql.Driver";  
 	static String url = "jdbc:postgresql://localhost:5432/MarketData";  
 	static String username = "postgres";
-	static String password = "AQFTrading"; //sayantan
+	static String password = "s3rect"; //sayantan
 	//static String password = "aqf@123"; //dev
 
 }

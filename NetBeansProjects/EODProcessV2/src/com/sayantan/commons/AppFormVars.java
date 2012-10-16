@@ -51,12 +51,12 @@ public class AppFormVars {
         AppFormVars.tradeParams = tradeParams;
     }
 
-    public void addPositionParams(String p, String s, String t, Integer a, String c, Integer st, Date e, BigDecimal ppr, BigDecimal cpr, BigDecimal ppm, BigDecimal cpm, BigDecimal pt, BigDecimal ct, BigDecimal dpm, BigDecimal dpt) {
-        positionParams.add(new TabFormVars(p, s, t, a, c, st, e, ppr, cpr, ppm, cpm, pt, ct, dpm, dpt));
+    public void addTradeParams(String d, String p, String s, String t, Integer a, String c, Integer st, Date e, BigDecimal tpr, BigDecimal cpr, BigDecimal tpm, BigDecimal cpm, BigDecimal pt, BigDecimal ct, BigDecimal dpm, BigDecimal dpt) {
+        tradeParams.add(new TabFormVars("trade", p, s, t, a, c, st, e, tpr, cpr, tpm, cpm, pt, ct, dpm, dpt));
     }
 
-    public void addTradeParams(String d, String p, String s, String t, Integer a, String c, Integer st, Date e, BigDecimal tpr, BigDecimal cpr, BigDecimal tpm, BigDecimal cpm, BigDecimal pt, BigDecimal ct, BigDecimal dpm, BigDecimal dpt) {
-        positionParams.add(new TabFormVars("trade", p, s, t, a, c, st, e, tpr, cpr, tpm, cpm, pt, ct, dpm, dpt));
+    public void addPositionParams(String p, String s, String t, Integer a, String c, Integer st, Date e, BigDecimal ppr, BigDecimal cpr, BigDecimal ppm, BigDecimal cpm, BigDecimal pt, BigDecimal ct, BigDecimal dpm, BigDecimal dpt) {
+        positionParams.add(new TabFormVars(p, s, t, a, c, st, e, ppr, cpr, ppm, cpm, pt, ct, dpm, dpt));
     }
 
     public void addPrevTheo(BigDecimal value) {
