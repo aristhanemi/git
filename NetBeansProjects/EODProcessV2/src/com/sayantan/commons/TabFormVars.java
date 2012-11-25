@@ -23,22 +23,22 @@ public class TabFormVars implements Comparable<TabFormVars> {
     private BigDecimal dailyPLtheo;
 
     public TabFormVars(String d, String p, String s, String t, Integer a, String c, Integer st, Date e, BigDecimal tpr, BigDecimal cpr, BigDecimal tpm, BigDecimal cpm, BigDecimal pt, BigDecimal ct, BigDecimal dpm, BigDecimal dpt) {
-    d = "trade";
-    posid = p;
-    symbol = s;
-    type = t;
-    amount = a;
-    cp = c;
-    strike = st;
-    expiration = e;
-    tradePrice = tpr;
-    currentPrice = cpr;
-    tradePrem = tpm;
-    currentPrem = cpm;
-    prevTheo = pt;
-    currentTheo = ct;
-    dailyPLmtm = dpm;
-    dailyPLtheo = dpt;
+        d = "trade";
+        posid = p;
+        symbol = s;
+        type = t;
+        amount = a;
+        cp = c;
+        strike = st;
+        expiration = e;
+        tradePrice = tpr;
+        currentPrice = cpr;
+        tradePrem = tpm;
+        currentPrem = cpm;
+        prevTheo = pt;
+        currentTheo = ct;
+        dailyPLmtm = dpm;
+        dailyPLtheo = dpt;
     }
 
     public TabFormVars(String p, String s, String t, Integer a, String c, Integer st, Date e, BigDecimal ppr, BigDecimal cpr, BigDecimal ppm, BigDecimal cpm, BigDecimal pt, BigDecimal ct, BigDecimal dpm, BigDecimal dpt) {

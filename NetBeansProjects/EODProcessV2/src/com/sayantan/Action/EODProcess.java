@@ -8,12 +8,9 @@ import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.PdfContentByte;
 import com.itextpdf.text.pdf.PdfTemplate;
 import com.itextpdf.text.pdf.PdfWriter;
-
 import com.sayantan.commons.AppFormVars;
-import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Shape;
-import java.awt.print.PrinterException;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.sql.SQLException;

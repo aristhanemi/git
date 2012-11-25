@@ -22,6 +22,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.math.RoundingMode;
 import java.sql.SQLException;
 import java.sql.*;
 import java.util.ArrayList;
@@ -45,10 +46,16 @@ public class EODProcessV1 {
     private static final Logger logger = Logger.getLogger(EODProcessV1.class);
     static Document document = new Document();
     AppFormVars formVars = new AppFormVars();
-    ArrayList<BigDecimal> tradePLmtm = new ArrayList<>();
-    ArrayList<BigDecimal> tradePLtheo = new ArrayList<>();
-    ArrayList<BigDecimal> positionPLmtm = new ArrayList<>();
-    ArrayList<BigDecimal> positionPLtheo = new ArrayList<>();
+//    ArrayList<BigDecimal> tradePLmtm = new ArrayList<>();
+//    ArrayList<BigDecimal> tradePLtheo = new ArrayList<>();
+//    ArrayList<BigDecimal> positionPLmtm = new ArrayList<>();
+//    ArrayList<BigDecimal> positionPLtheo = new ArrayList<>();
+//    ArrayList<BigDecimal> dailyMTMpl = new ArrayList<>();
+//    ArrayList<BigDecimal> dailyPlTheo = new ArrayList<>();
+    ArrayList<TabFormVars> tradePLmtm = new ArrayList<>();
+    ArrayList<TabFormVars> tradePLtheo = new ArrayList<>();
+    ArrayList<TabFormVars> positionPLmtm = new ArrayList<>();
+    ArrayList<TabFormVars> positionPLtheo = new ArrayList<>();
     MathContext mc = new MathContext(0);
 
     EODProcessV1() throws SQLException {
@@ -89,7 +96,8 @@ public class EODProcessV1 {
          */
         AppFormVars.setRsDataSet(AppFormVars.getStmt().executeQuery(positionQuery));
         while (AppFormVars.getRsDataSet().next()) {
-            logger.info("posiid: " + AppFormVars.getRsDataSet().getString("posid"));
+            logger.info("posiid: " + AppFormVars.getRsDataSet().getString("tradetype")+"\ncurprice: "
+                    +AppFormVars.getRsDataSet().getBigDecimal("currentprice"));
 
             formVars.addPositionParams(
                     AppFormVars.getRsDataSet().getString("posid"),
@@ -100,66 +108,146 @@ public class EODProcessV1 {
                     Integer.valueOf(AppFormVars.getRsDataSet().getInt("strike")),
                     AppFormVars.getRsDataSet().getDate("expmatdate"),
                     AppFormVars.getRsDataSet().getBigDecimal("prevcloseprice"),
-                    AppFormVars.getRsDataSet().getBigDecimal("prevclosetheo"),
                     AppFormVars.getRsDataSet().getBigDecimal("currentprice"),
-                    AppFormVars.getRsDataSet().getBigDecimal("currentprem"),
+                    AppFormVars.getRsDataSet().getBigDecimal("prevcloseprem"),
+                    AppFormVars.getRsDataSet().getBigDecimal("currentprem"),                    
                     AppFormVars.getRsDataSet().getBigDecimal("prevclosetheo"),
                     AppFormVars.getRsDataSet().getBigDecimal("currentpremtheo"),
                     null, null);
         }
-
         logger.info(//<editor-fold defaultstate="collapsed" desc="comment">
                 "Trade Params: " + AppFormVars.getTradeParams() + "\nPosition Params: " + AppFormVars.getPositionParams() //</editor-fold>
                 );
 
         /**
-         * P/L calculations 
+         * P/L calculations
          */
         mc = MathContext.DECIMAL128;
-
+        logger.info("outside calcs");
         for (int a = 0; a < AppFormVars.getPositionParams().size(); a++) {
-            logger.info(AppFormVars.getPositionParams().get(a).getType());
-            if (AppFormVars.getPositionParams().get(a).getCurrentPrice() != null
-                    && AppFormVars.getPositionParams().get(a).getPrevPrice() != null
-                    && AppFormVars.getPositionParams().get(a).getAmount() != null) {
-                if (AppFormVars.getPositionParams().get(a).getType().equalsIgnoreCase("Future")
+            logger.info("\ntype:"+AppFormVars.getPositionParams().get(a).getPosid() 
+                    + "\ntype:"+AppFormVars.getPositionParams().get(a).getType() 
+                    + "\ncprice" + AppFormVars.getPositionParams().get(a).getCurrentPrice() 
+                    + "\npprice" + AppFormVars.getPositionParams().get(a).getPrevPrice() 
+                    + "\npprem" + AppFormVars.getPositionParams().get(a).getPrevPrem() 
+                    + "\nptheo" + AppFormVars.getPositionParams().get(a).getPrevTheo() 
+                    + "\namt" + AppFormVars.getPositionParams().get(a).getAmount());
+
+//            if (AppFormVars.getPositionParams().get(a).getPrevPrice() != null
+//                    && AppFormVars.getPositionParams().get(a).getAmount() != null) {
+                logger.info(AppFormVars.getPositionParams().get(a).getType());
+
+                if (AppFormVars.getPositionParams().get(a).getType().equals("Future")
                         || AppFormVars.getPositionParams().get(a).getType().equalsIgnoreCase("Cash")) {
-                    BigDecimal dailyOpenFutPl = (AppFormVars.getPositionParams().get(a).getCurrentPrice().subtract(AppFormVars.getPositionParams().get(a).getPrevPrice(), mc)).multiply(new BigDecimal(AppFormVars.getPositionParams().get(a).getAmount()));
-                    positionPLmtm.add(dailyOpenFutPl);
-                    positionPLtheo.add(dailyOpenFutPl);
-                    AppFormVars.getPositionParams().get(a).setDailyPLmtm(dailyOpenFutPl);
-                    AppFormVars.getPositionParams().get(a).setDailyPLtheo(dailyOpenFutPl);
-                } else if (AppFormVars.getPositionParams().get(a).getType().equalsIgnoreCase("Option")) {
-                    BigDecimal dailyMTMpl = (AppFormVars.getPositionParams().get(a).getCurrentPrem().subtract(AppFormVars.getPositionParams().get(a).getPrevPrem(), mc)).multiply(new BigDecimal(AppFormVars.getPositionParams().get(a).getAmount()));
-                    BigDecimal dailyPlTheo = (AppFormVars.getPositionParams().get(a).getCurrentTheo().subtract(AppFormVars.getPositionParams().get(a).getPrevTheo(), mc)).multiply(new BigDecimal(AppFormVars.getPositionParams().get(a).getAmount()));
-                    logger.info(dailyMTMpl);
-                    positionPLmtm.add(dailyMTMpl);
-                    logger.info(dailyMTMpl);
-                    positionPLtheo.add(dailyPlTheo);
-                    AppFormVars.getPositionParams().get(a).setDailyPLmtm(dailyMTMpl);
-                    AppFormVars.getPositionParams().get(a).setDailyPLtheo(dailyPlTheo);
+                    logger.info("indide future/cash");
+                    BigDecimal dailyOpenFutPl = (AppFormVars.getPositionParams().get(a).getCurrentPrice()
+                            .subtract(AppFormVars.getPositionParams().get(a).getPrevPrice()))
+                            .multiply(new BigDecimal(AppFormVars.getPositionParams().get(a).getAmount()));
+                    AppFormVars.doPositionParams(a, AppFormVars.getPositionParams().get(a).getPosid(), 
+                            AppFormVars.getPositionParams().get(a).getSymbol(), 
+                            AppFormVars.getPositionParams().get(a).getType(), 
+                            AppFormVars.getPositionParams().get(a).getAmount(), 
+                            AppFormVars.getPositionParams().get(a).getCp(), 
+                            AppFormVars.getPositionParams().get(a).getStrike(), 
+                            AppFormVars.getPositionParams().get(a).getExpiration(), 
+                            AppFormVars.getPositionParams().get(a).getPrevPrice(), 
+                            AppFormVars.getPositionParams().get(a).getCurrentPrice(), 
+                            AppFormVars.getPositionParams().get(a).getPrevPrem(), 
+                            AppFormVars.getPositionParams().get(a).getCurrentPrem(), 
+                            AppFormVars.getPositionParams().get(a).getPrevTheo(), 
+                            AppFormVars.getPositionParams().get(a).getCurrentTheo(), 
+                            dailyOpenFutPl, dailyOpenFutPl);
+//                    positionPLmtm.add(dailyOpenFutPl);
+//                    positionPLtheo.add(dailyOpenFutPl);
+//                    AppFormVars.getPositionParams().get(a).setDailyPLmtm(dailyOpenFutPl);
+//                    AppFormVars.getPositionParams().get(a).setDailyPLtheo(dailyOpenFutPl);
+                } else if (AppFormVars.getPositionParams().get(a).getType().equals("Option")) {
+                    logger.info("indide option");
+                    BigDecimal positionMTMplVar = (AppFormVars.getPositionParams().get(a).getCurrentPrem()
+                            .subtract(AppFormVars.getPositionParams().get(a).getPrevPrem()))
+                            .multiply(new BigDecimal(AppFormVars.getPositionParams().get(a).getAmount()));
+                    BigDecimal positionPlTheoVar = (AppFormVars.getPositionParams().get(a).getCurrentTheo()
+                            .subtract(AppFormVars.getPositionParams().get(a).getPrevTheo()))
+                            .multiply(new BigDecimal(AppFormVars.getPositionParams().get(a).getAmount()));
+                    
+                    AppFormVars.doPositionParams(a, AppFormVars.getPositionParams().get(a).getPosid(), 
+                            AppFormVars.getPositionParams().get(a).getSymbol(), 
+                            AppFormVars.getPositionParams().get(a).getType(), 
+                            AppFormVars.getPositionParams().get(a).getAmount(), 
+                            AppFormVars.getPositionParams().get(a).getCp(), 
+                            AppFormVars.getPositionParams().get(a).getStrike(), 
+                            AppFormVars.getPositionParams().get(a).getExpiration(), 
+                            AppFormVars.getPositionParams().get(a).getPrevPrice(), 
+                            AppFormVars.getPositionParams().get(a).getCurrentPrice(), 
+                            AppFormVars.getPositionParams().get(a).getPrevPrem(), 
+                            AppFormVars.getPositionParams().get(a).getCurrentPrem(), 
+                            AppFormVars.getPositionParams().get(a).getPrevTheo(), 
+                            AppFormVars.getPositionParams().get(a).getCurrentTheo(),
+                            positionMTMplVar, positionPlTheoVar);
+
+//                    logger.info(dailyMTMpl);
+//                    positionPLmtm.add(positionMTMplVar);
+//                    logger.info(positionMTMplVar);
+//                    positionPLtheo.add(positionPlTheoVar);
+//                    AppFormVars.getPositionParams().get(a).setDailyPLmtm(positionMTMplVar);
+//                    AppFormVars.getPositionParams().get(a).setDailyPLtheo(positionPlTheoVar);
                 }
-            }
-            logger.info(positionPLmtm.get(a));
+//            }
+            //logger.info(positionPLmtm.get(a));
+            logger.info(
+                    AppFormVars.getTradeParams().get(a).getDailyPLtheo());
         }
 
         for (int a = 0; a < AppFormVars.getTradeParams().size(); a++) {
-            if (AppFormVars.getTradeParams().get(a).getCurrentPrice() != null
-                    && AppFormVars.getTradeParams().get(a).getPrevPrice() != null
-                    && AppFormVars.getTradeParams().get(a).getAmount() != null) {
+//            if (AppFormVars.getTradeParams().get(a).getCurrentPrice() != null
+//                    && AppFormVars.getTradeParams().get(a).getPrevPrice() != null
+//                    && AppFormVars.getTradeParams().get(a).getAmount() != null) {
                 if (AppFormVars.getTradeParams().get(a).getType().equalsIgnoreCase("Future")
                         || AppFormVars.getTradeParams().get(a).getType().equalsIgnoreCase("Cash")) {
-                    BigDecimal dailyOpenFutPl = (AppFormVars.getTradeParams().get(a).getCurrentPrice().subtract(AppFormVars.getTradeParams().get(a).getTradePrice(), mc)).multiply(new BigDecimal(AppFormVars.getTradeParams().get(a).getAmount()));
-                    AppFormVars.getTradeParams().get(a).setDailyPLmtm(dailyOpenFutPl);
-                    AppFormVars.getTradeParams().get(a).setDailyPLtheo(dailyOpenFutPl);
+                    BigDecimal dailyOpenFutPl = (AppFormVars.getTradeParams().get(a).getCurrentPrice().subtract(AppFormVars.getTradeParams().get(a).getTradePrice())).multiply(new BigDecimal(AppFormVars.getTradeParams().get(a).getAmount()));
+                    AppFormVars.doTradeParams(a, "trade", 
+                            AppFormVars.getTradeParams().get(a).getPosid(), 
+                            AppFormVars.getTradeParams().get(a).getSymbol(), 
+                            AppFormVars.getTradeParams().get(a).getType(), 
+                            AppFormVars.getTradeParams().get(a).getAmount(), 
+                            AppFormVars.getTradeParams().get(a).getCp(), 
+                            AppFormVars.getTradeParams().get(a).getStrike(), 
+                            AppFormVars.getTradeParams().get(a).getExpiration(), 
+                            AppFormVars.getTradeParams().get(a).getCurrentPrem(), 
+                            AppFormVars.getTradeParams().get(a).getCurrentPrice(), 
+                            AppFormVars.getTradeParams().get(a).getTradePrem(), 
+                            AppFormVars.getTradeParams().get(a).getCurrentPrem(), 
+                            AppFormVars.getTradeParams().get(a).getPrevTheo(), 
+                            AppFormVars.getTradeParams().get(a).getCurrentTheo(),
+                            dailyOpenFutPl, dailyOpenFutPl);
+
+//                    AppFormVars.getTradeParams().get(a).setDailyPLmtm(dailyOpenFutPl);
+//                    AppFormVars.getTradeParams().get(a).setDailyPLtheo(dailyOpenFutPl);
+                    logger.info("posid: " + AppFormVars.getTradeParams().get(a).getPosid()+" " + AppFormVars.getPositionParams().get(a).getCurrentPrem()+" "+AppFormVars.getPositionParams().get(a).getTradePrem()+" "+AppFormVars.getPositionParams().get(a).getAmount() );
                 } else if (AppFormVars.getTradeParams().get(a).getType().equalsIgnoreCase("Option")) {
-                    BigDecimal dailyMTMpl = (AppFormVars.getPositionParams().get(a).getCurrentPrem().subtract(AppFormVars.getPositionParams().get(a).getTradePrem(), mc)).multiply(new BigDecimal(AppFormVars.getPositionParams().get(a).getAmount()));
-                    BigDecimal dailyPlTheo = (AppFormVars.getPositionParams().get(a).getCurrentTheo().subtract(AppFormVars.getPositionParams().get(a).getTradePrem(), mc)).multiply(new BigDecimal(AppFormVars.getPositionParams().get(a).getAmount()));
-                    AppFormVars.getTradeParams().get(a).setDailyPLmtm(dailyMTMpl);
-                    AppFormVars.getTradeParams().get(a).setDailyPLtheo(dailyPlTheo);
+                    BigDecimal tradeMTMpl = (AppFormVars.getTradeParams().get(a).getCurrentPrem().subtract(AppFormVars.getTradeParams().get(a).getTradePrem())).multiply(new BigDecimal(AppFormVars.getTradeParams().get(a).getAmount()));
+                    BigDecimal tradePlTheo = (AppFormVars.getTradeParams().get(a).getCurrentTheo().subtract(AppFormVars.getTradeParams().get(a).getTradePrem())).multiply(new BigDecimal(AppFormVars.getTradeParams().get(a).getAmount()));
+                    AppFormVars.doTradeParams(a, "trade",
+                            AppFormVars.getTradeParams().get(a).getPosid(), 
+                            AppFormVars.getTradeParams().get(a).getSymbol(), 
+                            AppFormVars.getTradeParams().get(a).getType(), 
+                            AppFormVars.getTradeParams().get(a).getAmount(), 
+                            AppFormVars.getTradeParams().get(a).getCp(), 
+                            AppFormVars.getTradeParams().get(a).getStrike(), 
+                            AppFormVars.getTradeParams().get(a).getExpiration(), 
+                            AppFormVars.getTradeParams().get(a).getCurrentPrem(), 
+                            AppFormVars.getTradeParams().get(a).getCurrentPrice(), 
+                            AppFormVars.getTradeParams().get(a).getTradePrem(), 
+                            AppFormVars.getTradeParams().get(a).getCurrentPrem(), 
+                            AppFormVars.getTradeParams().get(a).getPrevTheo(), 
+                            AppFormVars.getTradeParams().get(a).getCurrentTheo(),
+                            tradeMTMpl, tradePlTheo);
+ 
+//                    AppFormVars.getTradeParams().get(a).setDailyPLmtm(tradeMTMpl);
+//                    AppFormVars.getTradeParams().get(a).setDailyPLtheo(tradePlTheo);
                 }
             }
-        }
+//        }
         for (int a = 0; a < AppFormVars.getTradeParams().size(); a++) {
             logger.info(
                     AppFormVars.getTradeParams().get(a).getDailyPLtheo());
@@ -176,6 +264,7 @@ public class EODProcessV1 {
         /**
          * open positions j-table
          */
+        //logger.info(positionPLmtm.size());
         for (int m = 0; m < AppFormVars.getPositionParams().size(); m++) {
             AppFormVars.jTable2ListValues[m][0] = AppFormVars.getPositionParams().get(m).getSymbol();
             AppFormVars.jTable2ListValues[m][1] = AppFormVars.getPositionParams().get(m).getType();
@@ -189,8 +278,8 @@ public class EODProcessV1 {
             AppFormVars.jTable2ListValues[m][9] = AppFormVars.getPositionParams().get(m).getCurrentPrem();
             AppFormVars.jTable2ListValues[m][10] = AppFormVars.getPositionParams().get(m).getPrevTheo();
             AppFormVars.jTable2ListValues[m][11] = AppFormVars.getPositionParams().get(m).getCurrentTheo();
-            AppFormVars.jTable2ListValues[m][12] = positionPLmtm.get(m); //AppFormVars.getPositionParams().get(m).getDailyPLmtm();
-            AppFormVars.jTable2ListValues[m][13] = positionPLtheo.get(m); //AppFormVars.getPositionParams().get(m).getDailyPLtheo();
+            AppFormVars.jTable2ListValues[m][12] = AppFormVars.getPositionParams().get(m).getDailyPLmtm(); //positionPLmtm.get(m);
+            AppFormVars.jTable2ListValues[m][13] = AppFormVars.getPositionParams().get(m).getDailyPLtheo(); //positionPLtheo.get(m); 
         }
 
         /**

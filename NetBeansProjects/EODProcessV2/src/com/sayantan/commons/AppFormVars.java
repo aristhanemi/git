@@ -59,6 +59,13 @@ public class AppFormVars {
         positionParams.add(new TabFormVars(p, s, t, a, c, st, e, ppr, cpr, ppm, cpm, pt, ct, dpm, dpt));
     }
 
+    public static void doTradeParams(int i,String d, String p, String s, String t, Integer a, String c, Integer st, Date e, BigDecimal tpr, BigDecimal cpr, BigDecimal tpm, BigDecimal cpm, BigDecimal pt, BigDecimal ct, BigDecimal dpm, BigDecimal dpt) {
+        tradeParams.set(i, new TabFormVars(d, p, s, t, a, c, st, e, tpr, cpr, tpm, cpm, pt, ct, dpm, dpt));
+    }
+    public static void doPositionParams(int i, String p, String s, String t, Integer a, String c, Integer st, Date e, BigDecimal ppr, BigDecimal cpr, BigDecimal ppm, BigDecimal cpm, BigDecimal pt, BigDecimal ct, BigDecimal dpm, BigDecimal dpt) {
+        positionParams.set(i, new TabFormVars(p, s, t, a, c, st, e, ppr, cpr, ppm, cpm, pt, ct, dpm, dpt));
+    }
+    
     public void addPrevTheo(BigDecimal value) {
         addPrevTheo(value);
     }
